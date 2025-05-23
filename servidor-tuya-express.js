@@ -3,6 +3,7 @@ const cors = require('cors');
 const qs = require('qs');
 const crypto = require('crypto');
 const axios = require('axios');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,13 +11,14 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use(express.static('public')); // Servir archivos estáticos
 
 // Configuración de Tuya
 const config = {
     host: 'https://openapi.tuyaus.com',
-    accessKey: 'a7fy5t5vwayqe85tp4hq',
-    secretKey: '7f9b1392ba3349968d92c64ecc3a11b0',
-    deviceId: 'eb375f2eacf9c57a235qdq',
+    accessKey: process.env.TUYA_ACCESS_KEY || 'a7fy5t5vwayqe85tp4hq',
+    secretKey: process.env.TUYA_SECRET_KEY || '7f9b1392ba3349968d92c64ecc3a11b0',
+    deviceId: process.env.TUYA_DEVICE_ID || 'eb375f2eacf9c57a235qdq',
 };
 
 let token = '';
@@ -161,12 +163,23 @@ async function getDeviceInfo(deviceId) {
 
 // ENDPOINTS
 
+// Ruta principal - servir la interfaz
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Endpoint de salud
 app.get('/health', (req, res) => {
     res.json({
         status: 'OK',
         timestamp: new Date().toISOString(),
-        hasToken: !!token
+        hasToken: !!token,
+        config: {
+            hasAccessKey: !!config.accessKey,
+            hasSecretKey: !!config.secretKey,
+            hasDeviceId: !!config.deviceId,
+            environment: process.env.NODE_ENV || 'development'
+        }
     });
 });
 
@@ -306,9 +319,11 @@ async function startServer() {
         await getToken();
         console.log('Token inicial obtenido');
 
-        app.listen(PORT, () => {
+        app.listen(PORT, '0.0.0.0', () => {
             console.log(`Servidor corriendo en puerto ${PORT}`);
+            console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
             console.log(`Endpoints disponibles:`);
+            console.log(`  GET  / - Interfaz web`);
             console.log(`  GET  /health - Estado del servidor`);
             console.log(`  POST /device/on - Encender dispositivo`);
             console.log(`  POST /device/off - Apagar dispositivo`);
