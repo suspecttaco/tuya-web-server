@@ -85,7 +85,7 @@
 
     .controls-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 20px;
       margin-bottom: 25px;
     }
@@ -97,6 +97,7 @@
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
       border: 1px solid #e9ecef;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
+      overflow: hidden;
     }
 
     .control-card:hover {
@@ -170,8 +171,14 @@
 
     .custom-control {
       display: flex;
+      flex-direction: column;
       gap: 10px;
       margin-top: 10px;
+    }
+
+    .custom-control-row {
+      display: flex;
+      gap: 8px;
     }
 
     .custom-control input {
@@ -180,6 +187,7 @@
       border: 2px solid #dee2e6;
       border-radius: 6px;
       font-size: 14px;
+      min-width: 0; /* Permite que los inputs se contraigan */
     }
 
     .custom-control input:focus {
@@ -196,6 +204,7 @@
       cursor: pointer;
       font-size: 14px;
       font-weight: 600;
+      white-space: nowrap;
     }
 
     .custom-control button:hover {
@@ -267,6 +276,25 @@
       h1 {
         font-size: 2em;
       }
+
+      .custom-control-row {
+        flex-direction: column;
+      }
+
+      .custom-control input {
+        margin-bottom: 5px;
+      }
+    }
+
+    @media (max-width: 320px) {
+      .controls-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+
+      .control-card {
+        padding: 15px;
+      }
     }
   </style>
 </head>
@@ -327,9 +355,11 @@
     <div class="control-card">
       <h4>⚡ Control Personalizado</h4>
       <div class="custom-control">
-        <input type="text" id="customCommand" placeholder="switch_led" value="switch_led">
-        <input type="text" id="customValue" placeholder="true" value="true">
-        <button onclick="customControl()">Enviar</button>
+        <div class="custom-control-row">
+          <input type="text" id="customCommand" placeholder="switch_led" value="switch_led">
+          <input type="text" id="customValue" placeholder="true" value="true">
+        </div>
+        <button onclick="customControl()">Enviar Comando</button>
       </div>
     </div>
   </div>
@@ -364,6 +394,7 @@
                     • Access Key: ${config.hasAccessKey ? '✅ Configurado' : '❌ Faltante'}<br>
                     • Secret Key: ${config.hasSecretKey ? '✅ Configurado' : '❌ Faltante'}<br>
                     • Device ID: ${config.hasDeviceId ? '✅ Configurado' : '❌ Faltante'}<br>
+                    • Host: ${config.host || 'Por defecto'}<br>
                     • Ambiente: ${config.environment || 'No especificado'}
                 `;
       }

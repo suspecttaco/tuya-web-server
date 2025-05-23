@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const qs = require('qs');
@@ -13,13 +14,33 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static('public')); // Servir archivos estáticos
 
-// Configuración de Tuya
+// Configuración de Tuya - TODAS las credenciales vienen del .env
 const config = {
-    host: 'https://openapi.tuyaus.com',
-    accessKey: process.env.TUYA_ACCESS_KEY || 'a7fy5t5vwayqe85tp4hq',
-    secretKey: process.env.TUYA_SECRET_KEY || '7f9b1392ba3349968d92c64ecc3a11b0',
-    deviceId: process.env.TUYA_DEVICE_ID || 'eb375f2eacf9c57a235qdq',
+    host: process.env.TUYA_HOST || 'https://openapi.tuyaus.com',
+    accessKey: process.env.TUYA_ACCESS_KEY,
+    secretKey: process.env.TUYA_SECRET_KEY,
+    deviceId: process.env.TUYA_DEVICE_ID,
 };
+
+// Validar que todas las credenciales estén presentes
+function validateConfig() {
+    const missing = [];
+    if (!config.accessKey) missing.push('TUYA_ACCESS_KEY');
+    if (!config.secretKey) missing.push('TUYA_SECRET_KEY');
+    if (!config.deviceId) missing.push('TUYA_DEVICE_ID');
+
+    if (missing.length > 0) {
+        console.error('❌ Variables de entorno faltantes:');
+        missing.forEach(key => console.error(`   - ${key}`));
+        console.error('\nCrea un archivo .env con:');
+        console.error('TUYA_ACCESS_KEY=tu_access_key');
+        console.error('TUYA_SECRET_KEY=tu_secret_key');
+        console.error('TUYA_DEVICE_ID=tu_device_id');
+        console.error('TUYA_HOST=https://openapi.tuyaus.com (opcional)');
+        return false;
+    }
+    return true;
+}
 
 let token = '';
 
@@ -178,7 +199,8 @@ app.get('/health', (req, res) => {
             hasAccessKey: !!config.accessKey,
             hasSecretKey: !!config.secretKey,
             hasDeviceId: !!config.deviceId,
-            environment: process.env.NODE_ENV || 'development'
+            environment: process.env.NODE_ENV || 'development',
+            host: config.host
         }
     });
 });
@@ -315,14 +337,23 @@ app.use((error, req, res, next) => {
 // Inicializar servidor
 async function startServer() {
     try {
+        // Validar configuración antes de iniciar
+        if (!validateConfig()) {
+            process.exit(1);
+        }
+
+        console.log('✅ Configuración validada');
+        console.log(`🌐 Host Tuya: ${config.host}`);
+
         // Obtener token inicial
         await getToken();
-        console.log('Token inicial obtenido');
+        console.log('✅ Token inicial obtenido');
 
         app.listen(PORT, '0.0.0.0', () => {
-            console.log(`Servidor corriendo en puerto ${PORT}`);
-            console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`Endpoints disponibles:`);
+            console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+            console.log(`📱 Interfaz web: http://localhost:${PORT}`);
+            console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`\n📋 Endpoints disponibles:`);
             console.log(`  GET  / - Interfaz web`);
             console.log(`  GET  /health - Estado del servidor`);
             console.log(`  POST /device/on - Encender dispositivo`);
@@ -333,7 +364,7 @@ async function startServer() {
             console.log(`  POST /token/refresh - Renovar token`);
         });
     } catch (error) {
-        console.error('Error iniciando servidor:', error);
+        console.error('❌ Error iniciando servidor:', error);
         process.exit(1);
     }
 }
@@ -342,9 +373,9 @@ async function startServer() {
 setInterval(async () => {
     try {
         await getToken();
-        console.log('Token renovado automáticamente');
+        console.log('🔄 Token renovado automáticamente');
     } catch (error) {
-        console.error('Error renovando token automáticamente:', error);
+        console.error('❌ Error renovando token automáticamente:', error);
     }
 }, 2 * 60 * 60 * 1000); // 2 horas
 
